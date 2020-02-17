@@ -1,0 +1,12 @@
+{
+  "commands": [
+    {
+      "cmd": "ls -l",
+      "prefix": "LS"
+    },
+    {
+      "cmd": "ps -aux",
+      "prefix": "PS"
+    }
+  ]
+}
