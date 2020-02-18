@@ -9,6 +9,7 @@ import (
     "io/ioutil"
     "encoding/json"
     "strings"
+    "bufio"
 )
 
 type Processes struct {
@@ -24,18 +25,28 @@ func run(prefix string, command string, channel chan string) {
     split := strings.Fields(command)
     cmd := exec.Command("")
     if(len(split) > 1) {
-        cmd = exec.Command(split[0], strings.Join(split[1:len(split)], " "))
+        cmd = exec.Command(split[0], split[1:len(split)]...)
     } else {
         cmd = exec.Command(command)
     }
-    out, err := cmd.CombinedOutput()
+    cmdReader, err := cmd.StdoutPipe()
     if err != nil {
-        log.Fatalf("cmd.Run() failed with %s\n", err)
+        log.Fatal(err)
+    }
+    scanner := bufio.NewScanner(cmdReader)
+    go func() {
+        for scanner.Scan() {
+            channel <- prefix + " " + scanner.Text()
+        }
+    }()
+    if err := cmd.Start(); err != nil {
+        log.Fatal(err)
+    }
+    if err := cmd.Wait(); err != nil {
+        log.Fatal(err)
     }
 
-    channel <- prefix + " " + string(out[:])
-
-    time.Sleep(2000 * time.Millisecond)
+    time.Sleep(2 * time.Second)
     go run (prefix, command, channel)
 }
 
@@ -43,12 +54,11 @@ func out(channel chan string) {
     for {
         msg := <- channel
         fmt.Println(msg)
-        time.Sleep(time.Second * 1)
     }
 }
 
 func main() {
-    var c chan string = make(chan string)
+    var c chan string = make(chan string, 5)
     jsonFile, err := os.Open("logAggregator.json")
     if err != nil {
         fmt.Println(err)

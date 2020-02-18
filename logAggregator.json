@@ -7,6 +7,10 @@
     {
       "cmd": "ps -aux",
       "prefix": "PS"
+    },
+    {
+      "cmd": "ping 127.0.0.1",
+      "prefix": "PING"
     }
   ]
 }
